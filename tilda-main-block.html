@@ -1,0 +1,95 @@
+<!-- V17: правки Леры от 13.08, которых нет в самой Тильде — кликабельные лого
+     партнёров и анимация фигуры на первом экране.
+     Живёт в блоке «HTML-код» (T123) в самом низу главной страницы, а не в HEAD:
+     по просьбе Димы HEAD оставлен пустым, чтобы не влиять на первую отрисовку.
+     Оба скрипта работают только с блоками главной, поэтому одного блока хватает. -->
+<script>
+/* Лого партнёров кликабельны. Все 5 лого — один общий SVG (Frame_2087328167)
+   в зероблоке rec2925611001; поверх картинки кладём 5 невидимых ссылок по зонам
+   карточек (в долях ширины SVG 1429px, карточки по 280.625px с шагом 286.875px —
+   работает на любом масштабе). */
+(function () {
+  var LINKS = [
+    ['Yellow Rocks', 'https://yellowrocks.vc/'],
+    ['AdQuantum', 'https://www.adquantum.com/'],
+    ['MountFund', 'https://www.mountfund.com/'],
+    ['Funders', 'https://www.funders.vc/'],
+    ['D&P', 'https://www.linkedin.com/company/d-p-fund/']
+  ];
+  function decorate(el) {
+    if (el.dataset.v17links) return;
+    el.dataset.v17links = '1';
+    var atom = el.querySelector('.tn-atom') || el;
+    atom.style.position = 'relative';
+    LINKS.forEach(function (l, i) {
+      var a = document.createElement('a');
+      a.href = l[1];
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.setAttribute('aria-label', l[0]);
+      a.style.cssText = 'position:absolute;top:0;height:100%;z-index:5;cursor:pointer;' +
+        'width:19.64%;left:' + (i * 20.075).toFixed(3) + '%;';
+      atom.appendChild(a);
+    });
+  }
+  /* Тильда крутит лого «бегущей строкой» и клонирует элемент — вешаем
+     ссылки на КАЖДУЮ копию картинки и следим за появлением новых клонов. */
+  function buildAll() {
+    var found = false;
+    document.querySelectorAll('#rec2925611001 .tn-elem img').forEach(function (im) {
+      if (im.src.indexOf('2087328167') > -1) {
+        found = true;
+        decorate(im.closest('.tn-elem'));
+      }
+    });
+    return found;
+  }
+  var n = 0;
+  var t = setInterval(function () {
+    if (buildAll()) {
+      clearInterval(t);
+      var rec = document.getElementById('rec2925611001');
+      if (rec && window.MutationObserver) {
+        new MutationObserver(function () { buildAll(); })
+          .observe(rec, { childList: true, subtree: true });
+      }
+    } else if (++n > 40) clearInterval(t);
+  }, 500);
+
+  /* Поверх бегущей строки лежат прозрачные слои соседних зероблоков и
+     перехватывают клики. Поэтому дублируем: ловим клик на документе,
+     по координатам определяем карточку и открываем её ссылку. */
+  document.addEventListener('click', function (ev) {
+    if (ev.target && ev.target.closest && ev.target.closest('[data-v17links] a')) return;
+    var box = null;
+    document.querySelectorAll('#rec2925611001 .tn-elem[data-v17links]').forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) box = r;
+    });
+    if (!box) return;
+    var idx = Math.min(4, Math.floor((ev.clientX - box.left) / box.width / 0.20075));
+    window.open(LINKS[idx][1], '_blank', 'noopener');
+  });
+  /* курсор-«рука» над строкой логотипов */
+  document.addEventListener('mousemove', function (ev) {
+    var over = false;
+    document.querySelectorAll('#rec2925611001 .tn-elem[data-v17links]').forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) over = true;
+    });
+    document.documentElement.style.cursor = over ? 'pointer' : '';
+  });
+})();
+
+/* Анимация фигуры на главном экране: орбиты со звёздами
+   (Frame_2087328170 / Group.svg в hero-блоке rec2957942901) плавно «парят». */
+(function () {
+  var css = '@keyframes v17-float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-14px) rotate(3deg)}}' +
+    '#rec2957942901 .tn-elem[data-elem-id="1786543204958"] img,' +
+    '#rec2957942901 .tn-elem[data-elem-id="1786543370346"] img' +
+    '{animation:v17-float 7s ease-in-out infinite;will-change:transform}';
+  var st = document.createElement('style');
+  st.textContent = css;
+  (document.head || document.documentElement).appendChild(st);
+})();
+</script>
